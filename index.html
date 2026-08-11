@@ -24,19 +24,34 @@
   }
 
   /* ============================================================
-     WALLPAPER — clean white/grey Apple-style background filling
-     the whole viewport behind the phone-width content column.
+     WALLPAPER — white/grey base with soft blurred pastel colour
+     blobs drifting slowly behind everything, for a frosted, more
+     "alive" Apple-wallpaper feel instead of a flat gradient.
   ============================================================ */
   .wallpaper {
     position: fixed; inset: 0;
+    overflow: hidden;
     background: linear-gradient(165deg, #FFFFFF 0%, #F2F2F7 55%, #E5E5EA 100%);
     z-index: 0;
   }
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(75px);
+    opacity: 0.55;
+    will-change: transform;
+  }
+  .blob-1 { width: 380px; height: 380px; top: -90px;  left: -110px; background: #A9C9FF; animation: floatA 22s ease-in-out infinite alternate; }
+  .blob-2 { width: 420px; height: 420px; bottom: -130px; right: -120px; background: #FFC2E2; animation: floatB 26s ease-in-out infinite alternate; }
+  .blob-3 { width: 300px; height: 300px; top: 28%; right: -90px; background: #BDF5C7; animation: floatA 19s ease-in-out infinite alternate-reverse; }
+  .blob-4 { width: 260px; height: 260px; bottom: 8%; left: -70px; background: #D9C6FF; animation: floatB 24s ease-in-out infinite alternate-reverse; }
+  @keyframes floatA { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(30px,26px) scale(1.08); } }
+  @keyframes floatB { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(-26px,-20px) scale(1.06); } }
 
   .stage {
     position: relative; z-index: 1;
     height: 100%;
-    max-width: 460px;
+    max-width: 640px;
     margin: 0 auto;
     display: flex; flex-direction: column;
     color: #1C1C1E;
@@ -103,37 +118,74 @@
   }
   #homeScreen.visible { opacity: 1; pointer-events: auto; }
 
+  /* auto-fit + a capped track width (not 1fr) means icons stay a
+     fixed, bigger size and simply wrap onto new lines as the
+     screen narrows, rather than stretching to fill the row. */
   .app-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 30px 14px;
-    padding: 0 22px;
-    justify-items: center;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 96px));
+    justify-content: center;
+    gap: 36px 22px;
+    padding: 0 26px;
     align-content: center;
     overflow-y: auto;
     max-height: 100%;
   }
 
   .app-tile {
-    display: flex; flex-direction: column; align-items: center; gap: 7px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
     text-decoration: none; color: #1C1C1E;
     cursor: pointer;
     background: none; border: none; padding: 0;
     font-family: var(--font-system);
   }
   .app-icon {
-    width: 62px; height: 62px;
-    border-radius: 16px; /* ~26% squircle approximation */
+    width: 80px; height: 80px;
+    border-radius: 20px; /* ~26% squircle approximation */
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 6px 14px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.25);
-    transition: transform 0.12s ease;
+    transition: transform 0.18s cubic-bezier(.4,0,.2,1), box-shadow 0.18s ease;
+    position: relative;
+    overflow: hidden;
   }
+  /* Hover — lift and grow slightly (desktop / trackpad) */
+  .app-tile:hover .app-icon {
+    transform: translateY(-5px) scale(1.06);
+    box-shadow: 0 14px 24px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+  /* Press — quick squash while the finger/cursor is down */
   .app-tile:active .app-icon { transform: scale(0.90); }
-  .app-icon svg { width: 30px; height: 30px; }
+
+  /* Launch animation — plays for a beat right after a tap, before
+     the browser navigates to the app's URL. */
+  .app-tile.launching .app-icon {
+    animation: iconLaunch 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+  .app-tile.launching .app-icon::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0.6);
+    animation: rippleFlash 0.5s ease-out;
+  }
+  @keyframes iconLaunch {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.22); }
+    62%  { transform: scale(0.92); }
+    100% { transform: scale(1); }
+  }
+  @keyframes rippleFlash {
+    0%   { opacity: 0.7; }
+    100% { opacity: 0; }
+  }
+  /* Not-yet-configured tile (placeholder URL still in APPS) — a
+     little shake instead of navigating nowhere. */
+  .app-tile.not-ready .app-icon { animation: shakeIt 0.42s; }
+
+  .app-icon svg { width: 38px; height: 38px; }
   .app-label {
-    font-size: 12px; font-weight: 500;
-    text-align: center; line-height: 1.2;
-    max-width: 78px;
+    font-size: 13px; font-weight: 500;
+    text-align: center; line-height: 1.25;
+    max-width: 92px;
   }
 
   ::-webkit-scrollbar { display: none; }
@@ -141,7 +193,12 @@
 </head>
 <body>
 
-<div class="wallpaper"></div>
+<div class="wallpaper">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="blob blob-4"></div>
+</div>
 
 <div class="stage">
 
@@ -174,7 +231,7 @@
 const APPS = [
   {
     name: 'Label Printing',
-    url: 'https://script.google.com/macros/s/AKfycbwynPJusRYcEcfv9tMnFpWBTd1ctb_vu-V5DBUZK9JVKsKrRpriSCYkAgXUdXjTfxyI/exec',
+    url: 'PASTE_LABEL_PRINTING_URL_HERE',
     gradient: 'linear-gradient(160deg, #5AC8FA, #007AFF)',
     icon: `<path d="M6 9V4a1 1 0 011-1h10a1 1 0 011 1v5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><rect x="4" y="9" width="16" height="7" rx="1.5" stroke="#fff" stroke-width="1.8"/><path d="M7 15v5a1 1 0 001 1h8a1 1 0 001-1v-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
   },
@@ -274,6 +331,22 @@ function makeTile(app) {
       '<svg viewBox="0 0 24 24" fill="none">' + app.icon + '</svg>' +
     '</div>' +
     '<div class="app-label">' + app.name + '</div>';
+
+  // Play the launch animation for a beat, then navigate — rather
+  // than jumping straight to the URL on click.
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    if (btn.classList.contains('launching')) return;
+    if (!app.url || app.url.indexOf('PASTE_') === 0) {
+      // URL hasn't been filled in yet — shake instead of navigating nowhere.
+      btn.classList.add('not-ready');
+      setTimeout(() => btn.classList.remove('not-ready'), 420);
+      return;
+    }
+    btn.classList.add('launching');
+    setTimeout(() => { window.location.href = app.url; }, 260);
+  });
+
   return btn;
 }
 
